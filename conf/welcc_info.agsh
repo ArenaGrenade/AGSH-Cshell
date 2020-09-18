@@ -1,0 +1,15 @@
+Hello Human! Welcome to AGSH! This is a shell created by Rohan Asokan. 
+Do visit my Github if you want to make this shell better!!
+Github: https://github.com/ArenaGrenade
+
+You can do most of your day to day console tasks with this.
+
+This is a highly customizable shell. A lot of color themes can be 
+prepared and applied without hassle.
+
+For creating a theme create a copy of the theme_template.h and override
+those values for which you want to change the color. The colors are
+basically ANSI codes and the corresponding values can be found in the README.
+
+Enjoy your stay! :)
+

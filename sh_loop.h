@@ -9,7 +9,7 @@
 #define AGSH_TOK_DELIM " \t\r\n\a"
 #endif
 
-void prompt_edit_path(char** buf, char* usr_sys) {
+void prompt_edit_path(char** buf, char* usr_sys, int status) {
 	char* cwd;
 	cwd = (char*) malloc(PATH_MAX * sizeof(char));
 
@@ -20,7 +20,7 @@ void prompt_edit_path(char** buf, char* usr_sys) {
 
 	parse_path_rev(&cwd);
 
-	sprintf(*buf, "%s" COL(PATH_COL) "%s" COL_RES "%c", usr_sys, cwd, '>');
+	sprintf(*buf, "%s" "%s" COL(PATH_COL) "%s" COL_RES "%c", (status<0?":'( ":(status==0?":') ":"")), usr_sys, cwd, '>');
 }
 
 void get_user_sys(char** buf) {
@@ -116,7 +116,7 @@ char** split_cmds(int* cmd_len) {
 }
 
 void shell_loop(void) {
-	int shell_fail = 0;
+	int shell_fail = 1;
 	char* user_sys;
 	get_user_sys(&user_sys);
 
@@ -139,7 +139,7 @@ void shell_loop(void) {
 
 	do {
 		// Print prompt
-		prompt_edit_path(&path_buf, user_sys);
+		prompt_edit_path(&path_buf, user_sys, shell_fail);
 		printf(path_buf);
 
 		// Read and tokenize command

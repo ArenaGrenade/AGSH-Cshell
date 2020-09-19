@@ -57,4 +57,10 @@ void setup() {
 		perror(COL(ERR_COL) "AGSH shell error (shellwd)" COL_RES);
 		exit(EXIT_FAILURE);
 	}
+
+	// Setting and Getting Environment Variables
+	if (unsetenv("OLDPWD") < 0) {
+		perror(COL(ERR_COL) "AGSH shell error (clearoldpwd)" COL_RES);
+		exit(EXIT_FAILURE);
+	}
 }

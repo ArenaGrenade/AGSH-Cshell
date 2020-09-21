@@ -20,7 +20,7 @@ void prompt_edit_path(char** buf, char* usr_sys, int status) {
 
 	parse_path_rev(&cwd);
 
-	sprintf(*buf, "%s" "%s" COL(PATH_COL) "%s" COL_RES "%c", (status<0?":'( ":(status==0?":') ":"")), usr_sys, cwd, '>');
+	sprintf(*buf, "%s" "%s" COL(PATH_COL) "%s" COL_RES "%c", (status < 0)?":'( ":":') ", usr_sys, cwd, '>');
 }
 
 void get_user_sys(char** buf) {
@@ -81,7 +81,13 @@ char** split_cmds(int* cmd_len) {
 	ssize_t read_bufsize = 0;
 	struct passwd* username;
 
-	if(getline(&line, &read_bufsize, stdin) == -1 && feof(stdin)) {
+	if(getline(&line, &read_bufsize, stdin) == -1) {
+		if(feof(stdin)) {
+			printf("\nEOF character detected exiting...\n");
+			char** exit_com = (char**) malloc(sizeof(char*));
+			strcpy(exit_com[0], "exit");
+			agsh_exit(1, exit_com);
+		}
 		perror(COL(ERR_COL) "AGSH shell error (shellreadline)" COL_RES);
 		exit(EXIT_FAILURE);
 	}
@@ -149,9 +155,4 @@ void shell_loop(void) {
 			shell_fail = agsh_frontend_exec(tok_len, tokens);
 		}
 	} while(shell_fail <= 0);
-
-	if(shell_fail > 0) {
-		printf("\nThanks for using AGSH shell! Good Bye! :)\n\n");
-		write_history(HISTORY_PATH);
-	}
 }

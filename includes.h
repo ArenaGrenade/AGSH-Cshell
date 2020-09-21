@@ -32,3 +32,6 @@
 #include "builtins/agsh_nightswatch.h"
 #include "builtins/agsh_history.h"
 #include "builtins/agsh_exit.h"
+#include "builtins/agsh_setenv.h"
+#include "builtins/agsh_unsetenv.h"
+#include "builtins/agsh_getenv.h"

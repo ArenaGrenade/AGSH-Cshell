@@ -1,4 +1,4 @@
-TARGET=lsh
+TARGET=agsh
 
 build: # compiles all the C files as well as headers
 	@gcc main.c -o $(TARGET)

@@ -1,6 +1,6 @@
 int agsh_cd(int argc, char** argv) {
 	if (argc != 2 || strcmp(argv[0], "cd")) {
-		printf(COL(ERR_COL) "AGSH shell error: Command mismatch.\n" COL_RES);
+		printf(COL(ERR_COL) "AGSH shell error: " COL_RES "Command mismatch.\n");
 		return -1;
 	}
 

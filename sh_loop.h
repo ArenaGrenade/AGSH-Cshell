@@ -85,8 +85,10 @@ char** split_cmds(int* cmd_len) {
 		if(feof(stdin)) {
 			printf("\nEOF character detected exiting...\n");
 			char** exit_com = (char**) malloc(sizeof(char*));
-			strcpy(exit_com[0], "exit");
-			agsh_exit(1, exit_com);
+			exit_com[0] = (char*) malloc(5 * sizeof(char));
+			strcpy(exit_com[0], "quit");
+			agsh_quit(1, exit_com);
+			exit(EXIT_FAILURE);
 		}
 		perror(COL(ERR_COL) "AGSH shell error (shellreadline)" COL_RES);
 		exit(EXIT_FAILURE);

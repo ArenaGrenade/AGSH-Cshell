@@ -24,7 +24,7 @@ void agsh_sig_handle(int sig) {
 
 void setup() {
 	read_history(HISTORY_PATH);
-	FILE* welccf;
+	/*FILE* welccf;
 
 	if ((welccf = fopen(WELCC_PATH, "r")) == NULL) {
 		printf(COL(ERR_COL) "AGSH shell error (fetchwelcc): " COL_RES "Unable to fetch welcome message\n");
@@ -50,7 +50,7 @@ void setup() {
 		c = fgetc(welccf);
 	}
 	printf(COL_RES);
-	fclose(welccf);
+	fclose(welccf);*/
 
 	SHELL_CWD = (char*) malloc(PATH_MAX * sizeof(char));
 	if (getcwd(SHELL_CWD, PATH_MAX) == NULL) {

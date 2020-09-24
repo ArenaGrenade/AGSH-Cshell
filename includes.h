@@ -9,6 +9,7 @@
 #include <time.h>
 #include <grp.h>
 #include <signal.h>
+#include <fcntl.h>
 
 #include <sys/utsname.h>
 #include <sys/types.h>
@@ -31,7 +32,7 @@
 #include "builtins/agsh_pinfo.h"
 #include "builtins/agsh_nightswatch.h"
 #include "builtins/agsh_history.h"
-#include "builtins/agsh_exit.h"
+#include "builtins/agsh_quit.h"
 #include "builtins/agsh_setenv.h"
 #include "builtins/agsh_unsetenv.h"
 #include "builtins/agsh_getenv.h"

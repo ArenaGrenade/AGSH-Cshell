@@ -2,13 +2,6 @@
 #include "includes.h"
 #include "exec_handler.h"
 
-#ifndef AGSH_TOK_BUFSIZE
-#define AGSH_TOK_BUFSIZE 64
-#endif
-#ifndef AGSH_TOK_DELIM
-#define AGSH_TOK_DELIM " \t\r\n\a"
-#endif
-
 void prompt_edit_path(char** buf, char* usr_sys, int status) {
 	char* cwd;
 	cwd = (char*) malloc(PATH_MAX * sizeof(char));

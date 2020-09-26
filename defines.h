@@ -40,5 +40,10 @@
 
 #define COL(COL_BF) COL_BEG COL_BF COL_END
 
+
 #define HISTORY_PATH "utils/history.agsh"
 #define CONF_PATH "conf/"
+
+
+#define AGSH_TOK_BUFSIZE 64
+#define AGSH_TOK_DELIM " \t\r\n\a"

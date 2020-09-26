@@ -1,4 +1,4 @@
-int  redirection_setup(int* argc, char** argv, int* stdfds);
+int redirection_setup(int* argc, char** argv, int* stdfds);
 
 int print_arr(int size, char** arr) {
 	for (int i = 0 ; i < size; i++) {
@@ -57,29 +57,166 @@ int agsh_spawn_process(int argc, char** argv) {
 	return 0;
 }
 
-int agsh_frontend_exec(int argc, char **argv) {
-	if (argv[0] == NULL) return 0;
-	enqueue(argv[0]);
-
-	int status, was_builtin = 0;
-
-	// Redirection Setup
-	int stdfds[2];
-	if (redirection_setup(&argc, argv, stdfds) < 0) return -1;
+void decide_front_back(int argc, char **argv, int* status) {
+	int was_builtin = 0;
 
 	for (int i = 0; i < num_builtins; i++) {
 		if(strcmp(argv[0], names_builtins[i]) == 0) {
-			status = (func_builtins[i])(argc, argv);
+			(*status) = (func_builtins[i])(argc, argv);
 			was_builtin = 1;
 			break;
 		}
 	}
-	
-	if (!was_builtin) status = agsh_spawn_process(argc, argv);
+	if (!was_builtin) (*status) = agsh_spawn_process(argc, argv);
+}
 
-	// Rediretion Reset
-	dup2(stdfds[0], STDIN_FILENO);
-	dup2(stdfds[1], STDOUT_FILENO);
+int piping_and_exec(int argc, char** argv) {
+	// Creating a matrix of size argc * argc and then entering the indices of the commands correspondingly.
+	int** cmd_indices = (int**) malloc(argc * sizeof(int*));
+	cmd_indices[0] = (int*) malloc(argc * sizeof(int));
+	for (int j = 0 ; j < argc; j++) cmd_indices[0][j] = -1;
+
+	int cnt_cmds = 0;
+	for (int i = 0, col_ind = 0; i < argc; i++) {
+		if (strcmp(argv[i], "|") == 0) {
+			if (i == argc - 1){
+				printf(COL(ERR_COL) "AGSH shell error: " COL_RES "Unable to process command.\n");
+				return -1;
+			}
+			cnt_cmds++;
+			cmd_indices[cnt_cmds] = (int*) malloc(argc * sizeof(int));
+			for (int j = 0 ; j < argc; j++) cmd_indices[cnt_cmds][j] = -1;
+			col_ind = 0;
+
+			continue;
+		}
+		cmd_indices[cnt_cmds][col_ind] = i;
+		col_ind++;
+	}
+
+	int status = 0;
+	if (cnt_cmds == 0) {
+		// Creating the redirection now
+		int stdfds[2];
+		if (redirection_setup(&argc, argv, stdfds) < 0) return -1;
+
+		decide_front_back(argc, argv, &status);
+
+		// Rediretion Reset
+		dup2(stdfds[0], STDIN_FILENO);
+		dup2(stdfds[1], STDOUT_FILENO);
+	} else {
+		int num_pipes = cnt_cmds + 2;
+		int num_cmds = cnt_cmds + 1;
+		
+		// Create a list of pids of all pipe proocesses
+		pid_t* pipepids = (pid_t*) malloc(num_cmds * sizeof(pid_t));
+
+		// Create a list for the pipefds
+		int** pipefds = (int**) malloc(num_pipes * sizeof(int*));
+
+		for (int i = 0; i < num_pipes; i++) {
+			// Create pipes here and associate them with fds.
+			pipefds[i] = (int*) malloc(2 * sizeof(int));
+			pipefds[i][0] = -1;
+			pipefds[i][0] = -1;
+			if (pipe(pipefds[i]) < 0) {
+				perror(COL(ERR_COL) "AGSH shell error (pipecreate)" COL_RES);
+				// Close every other opened pipe on any failure
+				for (int j = 0; j < num_pipes; j++) {
+					if (pipefds[j][0] != -1) close(pipefds[i][0]);
+					if (pipefds[j][1] != -1) close(pipefds[i][1]);
+				}
+				return -1;
+			}
+		}
+
+		// Create the processes and handle pipes for them.
+		for (int i = 0 ; i < num_cmds; i++) pipepids[i] = -2;
+		for (int k = 0 ; k < num_cmds; k++) {
+			// Fork a child
+			if ((pipepids[k] = fork()) < 0) {
+				perror(COL(ERR_COL) "AGSH shell error (forkpipe)" COL_RES);
+				exit(EXIT_FAILURE);
+			}
+
+			if (pipepids[k] == 0) {
+				// Close all non-relevant pipe endings here.
+				for (int i = 0; i < num_pipes; i++) {
+					for (int j = 0; j < 2; j++) {
+						if ((i == k && j == 0) || (i == k + 1 && j == 1)) continue;
+						close(pipefds[i][j]);
+					}
+				}
+
+				// Dup the pipe that needs to be used here.
+				dup2(pipefds[k][0], STDIN_FILENO); // dup the input
+				if (k != (num_cmds - 1)) dup2(pipefds[k + 1][1], STDOUT_FILENO); // dup the output
+
+				// Recreate the command list here
+				char** command = (char**) malloc(sizeof(char*));
+				int cur_size = 0;
+
+				while (cmd_indices[k][cur_size] != -1) {
+					command = (char**) realloc(command, (cur_size + 2) * sizeof(char));
+					command[cur_size] = argv[cmd_indices[k][cur_size]];
+					cur_size++;
+				}
+				command[cur_size] = NULL;
+
+
+				// Creating the redirection now
+				int stdfds[2];
+				if (redirection_setup(&cur_size, command, stdfds) < 0) return -1;
+
+				// Testing code for finding the process id and the fds as well as the pipings.
+				// printf("%s at pid %i with pipe co-ordinates (%i, %i) and (%i, %i) and having fds (in: %i, out: %i)\n", command[0], getpid(), k, 0, k + 1, 1, pipefds[k][0], pipefds[k + 1][1]);
+
+				// Execute the command
+				int status;
+				decide_front_back(cur_size, command, &status);
+				if (status < 0) {
+					exit(EXIT_FAILURE);
+				}
+
+				// Rediretion Reset
+				dup2(stdfds[0], STDIN_FILENO);
+				dup2(stdfds[1], STDOUT_FILENO);
+
+				// Clean and exit this child
+				exit(EXIT_SUCCESS);
+			}
+		}
+
+		// Close all pipes in the parent process
+		for (int i = 0; i < num_pipes; i++)
+			for (int j = 0; j < 2; j++)
+				close(pipefds[i][j]);
+
+		int child_status = 0;
+		// Wait for all the children to complete and handle errors
+		for (int i = 0 ; i < num_cmds; i++) {
+			if ((waitpid(pipepids[i], &child_status, 0) < 0) || (!WIFEXITED(child_status) || (WEXITSTATUS(child_status) == EXIT_FAILURE))) {
+				perror(COL(ERR_COL) "AGSH shell error (waitforpipes)" COL_RES);
+				// Close all other opened processes and the pipe created for the parent comms.
+				for (int j = 0 ; j < num_cmds; j++) {
+					if (pipepids[j] != -1) {
+						kill(pipepids[j], SIGTERM);
+					}
+				}
+				return -1;
+			}
+		}
+	}
+	return status;
+}
+
+int agsh_frontend_exec(int argc, char **argv) {
+	if (argv[0] == NULL) return 0;
+	enqueue(argv[0]);
+
+	int status;	
+	status = piping_and_exec(argc, argv);
 
 	return status;
 }
@@ -93,7 +230,7 @@ int redirection_setup(int* argc, char **argv, int* stdfds) {
 
 	for (int i = 1 ; i < *argc; i++) {
 		if (strcmp(argv[i], ">>") == 0) open_flags = O_WRONLY | O_TRUNC | O_CREAT;
-		else if (strcmp(argv[i], ">") == 0) open_flags = O_WRONLY | O_CREAT;
+		else if (strcmp(argv[i], ">") == 0) open_flags = O_WRONLY | O_CREAT | O_APPEND;
 		else if (strcmp(argv[i], "<") == 0) open_flags = O_RDONLY;
 
 		if (open_flags != -1) {

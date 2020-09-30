@@ -7,24 +7,19 @@ int print_arr(int size, char** arr) {
 	}
 }
 
-int check_bg(int argc, char** args) {
-	for (int i = 0 ; i < argc; i++) {
-		if (strcmp(args[i], "&") == 0) {
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
 int agsh_spawn_process(int argc, char** argv) {
 	pid_t child;
 
-	int do_wait = check_bg(argc, argv);
+	int do_wait = 1;
+	if (argv[argc - 1] == "&") {
+		argv[argc - 1] = NULL;
+		argc--;
+		do_wait = 0;
+	}
 	
 	child = fork();
 	if (child == 0) {
-		setpgid(0, 0);
+		if (!do_wait) setpgid(0, 0);
 
 		if (execvp(argv[0], argv) < 0) {
 			perror(COL(ERR_COL) "AGSH shell error (execvpchild)" COL_RES);

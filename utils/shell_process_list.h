@@ -42,3 +42,40 @@ void del_process(pid_t pid) {
 
 	proc_list_size--;
 }
+
+void print_processes() {
+	if (head_lis == NULL) return;
+	struct child_process* last_printed = NULL;
+	struct child_process* print_iter = head_lis;
+	int iter_position = 1;
+
+	char path[PATH_MAX];
+	char* buf;
+	buf = (char*) malloc(AGSH_PINFO_BUF * sizeof(char));
+
+	FILE* file;
+
+	// Variables to read value to
+	char state;
+
+	while (last_printed != head_lis) {
+		while (print_iter->next != last_printed) print_iter = print_iter->next;
+
+		sprintf(path, "/proc/%i/status", print_iter->next->pid);
+		
+		if(!(file = fopen(path, "r"))) {
+			perror(COL(ERR_COL) "AGSH shell error (statusbgproc)" COL_RES);
+			return -1;
+		} else {
+			while(fgets(buf, AGSH_PINFO_BUF, file) != NULL) 
+				if (sscanf(buf, "State:\t%c", &state) == 1) 
+					break;
+		}
+
+		printf("[%i] %s %s [%s]", iter_position, ((state == "R")?"Running":"Stopped"), print_iter->name, print_iter->pid);
+		last_printed = print_iter;
+		iter_position++;
+	}
+
+	fclose(file);
+}

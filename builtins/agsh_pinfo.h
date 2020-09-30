@@ -1,7 +1,3 @@
-#ifndef AGSH_PINFO_BUF
-#define AGSH_PINFO_BUF 256
-#endif
-
 int agsh_pinfo(int argc, char** argv) {
 	if (argc == 0 || strcmp(argv[0], "pinfo") != 0) {
 		printf(COL(ERR_COL) "AGSH shell error: " COL_RES "Command Mismatch.\n");
@@ -21,7 +17,7 @@ int agsh_pinfo(int argc, char** argv) {
 
 	FILE* file;
 
-	// Variables to read values from
+	// Variables to read value to
 	char state;
 	int memsize;
 
@@ -41,6 +37,9 @@ int agsh_pinfo(int argc, char** argv) {
 			}
 		}
 	}
+
+	// Closing the file descriptor
+	fclose(file);
 
 	// Reading proc-exe for executable path
 	sprintf(path, "/proc/%i/exe", pid);

@@ -47,3 +47,5 @@
 
 #define AGSH_TOK_BUFSIZE 64
 #define AGSH_TOK_DELIM " \t\r\n\a"
+
+#define AGSH_PINFO_BUF 256

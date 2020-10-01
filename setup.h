@@ -14,8 +14,8 @@ void agsh_sig_handle(int sig) {
 			if (iter != NULL) {
 				if(WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS) printf("%s (%i) has exited succesfully!\n", iter->name, iter->pid);
 				if(WIFEXITED(status) && WEXITSTATUS(status) == EXIT_FAILURE) printf("%s (%i) has exited by failing!\n", iter->name, iter->pid);
-				else if(WIFSIGNALED(status)) printf("%s (%i) has exited with a signal!\n", iter->name, iter->pid);
-
+				if(WIFSIGNALED(status)) printf("%s (%i) has exited with a signal!\n", iter->name, iter->pid);
+				else if(kill(dead, 0) < 0) printf("%s (%i) has terminated with SIGTERM!\n", iter->name, iter->pid);
 				del_process(iter->pid);
 			}
 		}

@@ -36,3 +36,5 @@
 #include "builtins/agsh_setenv.h"
 #include "builtins/agsh_unsetenv.h"
 #include "builtins/agsh_getenv.h"
+#include "builtins/agsh_jobs.h"
+#include "builtins/agsh_kjob.h"

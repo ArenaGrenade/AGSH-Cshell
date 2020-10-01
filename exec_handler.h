@@ -11,7 +11,7 @@ int agsh_spawn_process(int argc, char** argv) {
 	pid_t child;
 
 	int do_wait = 1;
-	if (argv[argc - 1] == "&") {
+	if (strcmp(argv[argc - 1], "&") == 0) {
 		argv[argc - 1] = NULL;
 		argc--;
 		do_wait = 0;

@@ -1,6 +1,6 @@
-int agsh_kjob(int argc, char** argv) {
-    if (argc != 3 | strcmp(argv[0], "kjob") != 0) {
-        printf(COL(ERR_COL) "AGSH shell error (kjob): " COL_RES "Command mismatch.\n");
+int agsh_bg(int argc, char** argv) {
+    if (argc != 2 | strcmp(argv[0], "bg") != 0) {
+        printf(COL(ERR_COL) "AGSH shell error (bg): " COL_RES "Command mismatch.\n");
         return -1;
     }
 
@@ -11,10 +11,12 @@ int agsh_kjob(int argc, char** argv) {
         return -1;
     }
 
-    if (kill(job->pid, strtol(argv[2], NULL, 10)) < 0) {
+    if (kill(job->pid, SIGCONT) < 0) {
         perror(COL(ERR_COL) "AGSH shell error (signalproc)" COL_RES);
         return -1;
     }
+
+    printf("[%d] %s %d running in background\n", strtol(argv[1], NULL, 10), job->name, job->pid);
 
     return 0;
 }

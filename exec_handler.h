@@ -7,7 +7,7 @@ int print_arr(int size, char** arr) {
 	}
 }
 
-int agsh_spawn_process(int argc, char** argv) {
+int agsh_spawn_process(int argc, char** argv, int is_piped) {
 	pid_t child;
 
 	int do_wait = 1;
@@ -18,8 +18,8 @@ int agsh_spawn_process(int argc, char** argv) {
 	}
 	
 	child = fork();
-	if (child == 0) {
-		if (!do_wait) setpgid(0, 0);
+	if (!do_wait) setpgid(0, 0);
+	if (child == 0) {	
 
 		if (execvp(argv[0], argv) < 0) {
 			perror(COL(ERR_COL) "AGSH shell error (execvpchild)" COL_RES);
@@ -34,15 +34,32 @@ int agsh_spawn_process(int argc, char** argv) {
 	} 
 	else {
 		// Parent Process Control
-		if (do_wait) {
-			int status;
+		int status;
+		if (is_piped) {
 			waitpid(child, &status, WUNTRACED);
+			return 0;
+		}
+		if (do_wait) {
+
+			fgproc_pid = child;
+			signal(SIGTTOU, SIG_IGN);
+			setpgid(child, 0);
+			tcsetpgrp(STDIN_FILENO, child);
+			add_process(child, argv[0]);
+			waitpid(child, &status, WUNTRACED);
+
+			tcsetpgrp(STDIN_FILENO, getpgrp());
+			signal(SIGTTOU, SIG_DFL);
 
 			if(!WIFSTOPPED(status)) del_process(child);
 			else printf("%s (%i) has stopped!\n", argv[0], child);
+			
+			tcsetpgrp(shell_fd, shell_pgid);
+
 			return 0;
 		}
 		else {
+			waitpid(child, &status, WNOHANG);
 			printf("[%i] %i\n", proc_list_size, child);
 			add_process(child, argv[0]);
 			return 0;
@@ -52,7 +69,7 @@ int agsh_spawn_process(int argc, char** argv) {
 	return 0;
 }
 
-void decide_front_back(int argc, char **argv, int* status) {
+void decide_front_back(int argc, char **argv, int* status, int is_piped) {
 	int was_builtin = 0;
 
 	for (int i = 0; i < num_builtins; i++) {
@@ -62,7 +79,7 @@ void decide_front_back(int argc, char **argv, int* status) {
 			break;
 		}
 	}
-	if (!was_builtin) (*status) = agsh_spawn_process(argc, argv);
+	if (!was_builtin) (*status) = agsh_spawn_process(argc, argv, is_piped);
 }
 
 int piping_and_exec(int argc, char** argv) {
@@ -95,7 +112,7 @@ int piping_and_exec(int argc, char** argv) {
 		int stdfds[2];
 		if (redirection_setup(&argc, argv, stdfds) < 0) return -1;
 
-		decide_front_back(argc, argv, &status);
+		decide_front_back(argc, argv, &status, 0);
 
 		// Rediretion Reset
 		dup2(stdfds[0], STDIN_FILENO);
@@ -149,9 +166,8 @@ int piping_and_exec(int argc, char** argv) {
 				if (k != (num_cmds - 1)) dup2(pipefds[k + 1][1], STDOUT_FILENO); // dup the output
 
 				// Recreate the command list here
-				char** command = (char**) malloc(sizeof(char*));
 				int cur_size = 0;
-
+				char** command = (char**) malloc(sizeof(char*));
 				while (cmd_indices[k][cur_size] != -1) {
 					command = (char**) realloc(command, (cur_size + 2) * sizeof(char));
 					command[cur_size] = argv[cmd_indices[k][cur_size]];
@@ -169,10 +185,8 @@ int piping_and_exec(int argc, char** argv) {
 
 				// Execute the command
 				int status;
-				decide_front_back(cur_size, command, &status);
-				if (status < 0) {
-					exit(EXIT_FAILURE);
-				}
+				decide_front_back(cur_size, command, &status, 1);
+				if (status < 0) exit(EXIT_FAILURE);
 
 				// Rediretion Reset
 				dup2(stdfds[0], STDIN_FILENO);
@@ -191,7 +205,7 @@ int piping_and_exec(int argc, char** argv) {
 		int child_status = 0;
 		// Wait for all the children to complete and handle errors
 		for (int i = 0 ; i < num_cmds; i++) {
-			if ((waitpid(pipepids[i], &child_status, 0) < 0) || (!WIFEXITED(child_status) || (WEXITSTATUS(child_status) == EXIT_FAILURE))) {
+			if ((waitpid(pipepids[i], &child_status, 0) < 0) || (!WIFEXITED(child_status) && (WEXITSTATUS(child_status) == EXIT_FAILURE))) {
 				perror(COL(ERR_COL) "AGSH shell error (waitforpipes)" COL_RES);
 				// Close all other opened processes and the pipe created for the parent comms.
 				for (int j = 0 ; j < num_cmds; j++) {
@@ -224,8 +238,8 @@ int redirection_setup(int* argc, char **argv, int* stdfds) {
 	stdfds[1] = dup(STDOUT_FILENO);
 
 	for (int i = 1 ; i < *argc; i++) {
-		if (strcmp(argv[i], ">>") == 0) open_flags = O_WRONLY | O_TRUNC | O_CREAT;
-		else if (strcmp(argv[i], ">") == 0) open_flags = O_WRONLY | O_CREAT | O_APPEND;
+		if (strcmp(argv[i], ">") == 0) open_flags = O_WRONLY | O_TRUNC | O_CREAT;
+		else if (strcmp(argv[i], ">>") == 0) open_flags = O_WRONLY | O_CREAT | O_APPEND;
 		else if (strcmp(argv[i], "<") == 0) open_flags = O_RDONLY;
 
 		if (open_flags != -1) {
@@ -236,18 +250,18 @@ int redirection_setup(int* argc, char **argv, int* stdfds) {
 			}
 
 			// Open the file and duplicate the filestream for stdout
-			redfile = open(argv[i + 1], open_flags, S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
+			redfile = open(argv[i + 1], open_flags, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 
 			// Handle for output file
 			if (open_flags != O_RDONLY && dup2(redfile, STDOUT_FILENO) < 0) {
-				perror(COL(ERR_COL) "AGSH shell error(outdup)" COL_RES);
+				perror(COL(ERR_COL) "AGSH shell error(outdupopen)" COL_RES);
 				return -1;
 			}
 			
 
 			// Handle for input file
 			if (open_flags == O_RDONLY && dup2(redfile, STDIN_FILENO) < 0) {
-				perror(COL(ERR_COL) "AGSH shell error(indup)" COL_RES);
+				perror(COL(ERR_COL) "AGSH shell error(indupopen)" COL_RES);
 				return -1;
 			}
 

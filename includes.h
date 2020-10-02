@@ -38,3 +38,6 @@
 #include "builtins/agsh_getenv.h"
 #include "builtins/agsh_jobs.h"
 #include "builtins/agsh_kjob.h"
+#include "builtins/agsh_fg.h"
+#include "builtins/agsh_bg.h"
+#include "builtins/agsh_overkill.h"

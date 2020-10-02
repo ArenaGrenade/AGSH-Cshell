@@ -1,4 +1,4 @@
-#define num_builtins 13
+#define num_builtins 16
 char* names_builtins[] = {
 	"echo",
 	"pwd",
@@ -13,6 +13,9 @@ char* names_builtins[] = {
 	"getenv",
 	"jobs",
 	"kjob",
+	"fg",
+	"bg",
+	"overkill",
 };
 
 int agsh_echo(int argc, char** argv);
@@ -28,6 +31,9 @@ int agsh_unsetenv(int argc, char** argv);
 int agsh_getenv(int argc, char** argv);
 int agsh_jobs(int argc, char** argv);
 int agsh_kjob(int argc, char** argv);
+int agsh_fg(int argc, char** argv);
+int agsh_bg(int argc, char** argv);
+int agsh_overkill(int argc, char** argv);
 
 int (*func_builtins[]) (int, char**) = {
 	&agsh_echo,
@@ -43,4 +49,7 @@ int (*func_builtins[]) (int, char**) = {
 	&agsh_getenv,
 	&agsh_jobs,
 	&agsh_kjob,
+	&agsh_fg,
+	&agsh_bg,
+	&agsh_overkill,
 };

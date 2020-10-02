@@ -43,8 +43,8 @@ void del_process(pid_t pid) {
 	proc_list_size--;
 }
 
-pid_t get_process(int job) {
-	if (head_lis == NULL) return -1;
+struct child_process* get_process(int job) {
+	if (head_lis == NULL) return NULL;
 	struct child_process* iter = head_lis;
 	int iter_position = 1;
 
@@ -52,15 +52,14 @@ pid_t get_process(int job) {
 		iter = iter->next;
 		iter_position++;
 	}
-	if (iter == NULL) return -1;
-	return iter->pid;
+	if (iter == NULL) return NULL;
+	return iter;
 }
 
+// Might have to refactor this function
 int print_processes() {
 	if (head_lis == NULL) return 0;
-	struct child_process* last_printed = NULL;
 	struct child_process* print_iter = head_lis;
-	int iter_position = 1;
 
 	char path[PATH_MAX];
 	char* buf;
@@ -71,11 +70,10 @@ int print_processes() {
 	// Variables to read value to
 	char state;
 
-	while (last_printed != head_lis) {
-		while (print_iter->next != last_printed) print_iter = print_iter->next;
-
+	for (int job = 0; job < proc_list_size; job++) {
+		if ((print_iter = get_process(job)) == NULL) return -1;
 		sprintf(path, "/proc/%i/status", print_iter->pid);
-		
+
 		if(!(file = fopen(path, "r"))) {
 			perror(COL(ERR_COL) "AGSH shell error (statusbgproc)" COL_RES);
 			return -1;
@@ -85,9 +83,7 @@ int print_processes() {
 					break;
 		}
 
-		printf("[%i] %s %s [%i]", iter_position, (state == 'R')? "Running" : "Stopped", print_iter->name, print_iter->pid);
-		last_printed = print_iter;
-		iter_position++;
+		printf("[%i] %s %s in the background[%i]\n", job + 1, (state == 'S')? "Running" : "Stopped", print_iter->name, print_iter->pid);
 	}
 
 	fclose(file);

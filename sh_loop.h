@@ -128,16 +128,6 @@ void shell_loop(void) {
 	char** tokens;
 	int tok_len;
 
-	// Stuff to do before the shell starts - need for refactor
-	signal(SIGTTIN, SIG_IGN); // stop terminal input to background process
-	signal(SIGTTOU, SIG_IGN); // stop terminal output control for background process
-
-	signal(SIGINT, SIG_IGN); // ignore CTRL + C
-	signal(SIGTSTP, SIG_IGN); // ingore CTRL + Z
-	signal(SIGQUIT, SIG_IGN); // ignore CTRL + \
-
-	signal(SIGCHLD, agsh_sig_handle);
-
 	do {
 		// Print prompt
 		prompt_edit_path(&path_buf, user_sys, shell_fail);

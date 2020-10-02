@@ -106,6 +106,7 @@ Foreground procoesses are what are normally executed. To perform a background pr
 ## Input Output Redirection
 
 Input and output redirection is supported by the shell. 
+
 * You can input a file using `<`
 * You can append the output to a file using `>>`
 * And you can truncate the file and output to it using `>`

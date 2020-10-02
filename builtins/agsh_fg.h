@@ -5,7 +5,7 @@ int agsh_fg(int argc, char** argv) {
 
     struct child_process* job;
 
-    if ((job = get_process(strtol(argv[1], NULL, 10))) == NULL) {
+    if ((job = get_process(proc_list_size - strtol(argv[1], NULL, 10) + 1)) == NULL) {
         printf(COL(ERR_COL) "AGSH shell error (getjobpid): " COL_RES "Job not found.\n"); 
         return -1;
     }
@@ -20,7 +20,7 @@ int agsh_fg(int argc, char** argv) {
     tcsetpgrp(STDIN_FILENO, fgproc_pid);
 
     kill(job->pid, SIGCONT);
-
+    add_process(fgproc_pid, job->name);
     waitpid(job->pid, &status, WUNTRACED);
 
     tcsetpgrp(STDIN_FILENO, getpgrp());

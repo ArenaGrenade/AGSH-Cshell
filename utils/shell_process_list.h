@@ -59,7 +59,7 @@ struct child_process* get_process(int job) {
 // Might have to refactor this function
 int print_processes() {
 	if (head_lis == NULL) return 0;
-	struct child_process* print_iter = head_lis;
+	struct child_process* print_iter = NULL;
 
 	char path[PATH_MAX];
 	char* buf;
@@ -70,7 +70,7 @@ int print_processes() {
 	// Variables to read value to
 	char state;
 
-	for (int job = 0; job < proc_list_size; job++) {
+	for (int job = proc_list_size; job > 0; job--) {
 		if ((print_iter = get_process(job)) == NULL) return -1;
 		sprintf(path, "/proc/%i/status", print_iter->pid);
 
@@ -82,8 +82,7 @@ int print_processes() {
 				if (sscanf(buf, "State:\t%c", &state) == 1) 
 					break;
 		}
-
-		printf("[%i] %s %s in the background[%i]\n", job + 1, (state == 'S')? "Running" : "Stopped", print_iter->name, print_iter->pid);
+		printf("[%i] %s %s in the background [%i]\n", (proc_list_size - job + 1), (state == 'S')? "Running" : "Stopped", print_iter->name, print_iter->pid);
 	}
 
 	fclose(file);

@@ -6,7 +6,7 @@ int agsh_kjob(int argc, char** argv) {
 
     struct child_process* job;
 
-    if ((job = get_process(strtol(argv[1], NULL, 10))) == NULL) {
+    if ((job = get_process(proc_list_size - strtol(argv[1], NULL, 10) + 1)) == NULL) {
         printf(COL(ERR_COL) "AGSH shell error (getjobpid): " COL_RES "Job not found.\n"); 
         return -1;
     }

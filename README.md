@@ -55,11 +55,45 @@ This command prints the current working directory after processing for the pseud
 * For both of this, press `q` to stop nightswatch.
 * It might exit with a repetition of shell prompts, you can still enter a command and use the shell normally. If this disturbs you please do a `clear` and continue.
 
+### history
+
 * Prints the at max the last 20 commands. Can specify the number of commands by passed an extra parameter, like `history n`.
 * Internally it is implemented as a queue on linked list for the shell to stay light on the PC (Performance first ;)).
-* For it to get stored and retrieved, we need to properly quit the terminal. (Verry Important)
+* For it to get stored and retrieved, we need to properly quit the terminal. (Very Important)
 
-### exit
+### setenv
+
+Sets an environment variable that is provided as `variable value`. An environment variable `variable` is created with the value `value`.
+
+### unsetenv
+
+Removes the environment variable that is given as an arguement to this command.
+
+### getenv
+
+Returns the value of the environment variable that is given as an argument to this command.
+
+### jobs
+
+Prints all the background process in order of the most recently created process at the last.
+
+### kjob
+
+Sends a signal `signal` to the background job pointed to by `job number`. Signals need to entered as integers.
+
+### fg
+
+Brings the background process `job number` and runs it in the foreground.
+
+### bg
+
+Runs the process in the background of the job `job nuumber`.
+
+### overkill
+
+Kills all the background process at a time. This is also used in `quit` command to ensure that there are no orphan processes after exiting thhe shell.
+
+### quit
 
 This command exits the terminal. (As the name suggests...)
 
@@ -67,5 +101,31 @@ This command exits the terminal. (As the name suggests...)
 
 Foreground procoesses are what are normally executed. To perform a background process and & must be added to the end of the command.
 
-* Vim does not work as a background process.
 * A background process that ends will print that the process has ended and will not print the prompt direrctly. This is because considering a command like nightswatch, we wouold have to break the process and then prompt. This is very hard to handle, so printing the prompt right after a background process breaks is skipped.
+
+## Input Output Redirection
+
+Input and output redirection is supported by the shell. 
+* You can input a file using `<`
+* You can append the output to a file using `>>`
+* And you can truncate the file and output to it using `>`
+* A new output file will be created if that file does not exist already.
+* It also takes care of multiple command rerdirections like, `command < file1.txt < file2.txt`, only the laast one is considered.
+
+## Piping
+
+Any number of pipes are supported by the shell. Piping and Redirection can be easily combined with each other. Though, redirection binds tighter than pipes.
+
+## Signals
+
+The following signals are handled by the shell to ensure that they don't kill the shell itself.
+
+### CTRL + Z
+
+Any running foreground process is pushed to the background.
+
+### CTRL + C
+
+This signals closes / terminates using SIGINT any running foreground process
+
+Both these commands do nothing if there are no foreground processes that are running.
